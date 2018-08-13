@@ -71,6 +71,7 @@ if __name__ == '__main__':
 
         if Augmentation is True:
             X = augment(X)
+
         os.system('tensorboard --logdir=. &')
         model.fit(X, Y, validation_set=(testX, testY), n_epoch=num_epochs,
                   shuffle=True, batch_size=256, show_metric=True,
@@ -78,8 +79,7 @@ if __name__ == '__main__':
               run_id='Protein_predict_' + str(str_len))
         model.save('Protein_predict_' + str(str_len))
     else:
-        X, _, testX, testY = h5load(str_len)
-        _, testX = normalize(X, testX)
+        _, _, testX, testY = h5load(str_len)
         model.load('Protein_predict_' + str(str_len))
         tflearn.config.init_training_mode()
         cm = make_conf_mat(testX, testY, model, str_len, num_classes)
