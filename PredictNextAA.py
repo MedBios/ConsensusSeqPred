@@ -40,6 +40,11 @@ parser.add_argument(
     type=int,
     default=15,
     help='How many epochs to train for. Default 15.')
+parser.add_argument(
+    '--learning_rate',
+    type=float,
+    default=.001,
+    help='Learning rate for training. Default .001.')
 
 args = parser.parse_args()
 str_len = args.string_length
@@ -49,7 +54,7 @@ Augmentation = args.augmentation
 num_classes = 25
 keyword = args.keyword
 num_epochs = args.num_epochs
-
+lr = args.learning_rate
 
 
 if __name__ == '__main__':
@@ -60,7 +65,7 @@ if __name__ == '__main__':
     lstm4 = lstm(lstm3, 300)
     fc = fc(lstm4, num_classes, activation='softmax')
     net = regression(fc, optimizer='adam', loss='categorical_crossentropy',
-                                                        learning_rate=0.001)
+                                                    learning_rate=learning_rate)
     model = tflearn.DNN(net, tensorboard_verbose=2, tensorboard_dir='.')
 
     if Train in ['Y', 'y']:
