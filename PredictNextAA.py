@@ -60,7 +60,7 @@ if __name__ == '__main__':
     lstm4 = lstm(lstm3, 300)
     fc = fc(lstm4, num_classes, activation='softmax')
     net = regression(fc, optimizer='adam', loss='categorical_crossentropy',
-                                                        learning_rate=0.0005)
+                                                        learning_rate=0.001)
     model = tflearn.DNN(net, tensorboard_verbose=2, tensorboard_dir='.')
 
     if Train in ['Y', 'y']:
