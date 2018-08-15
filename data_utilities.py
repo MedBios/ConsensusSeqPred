@@ -97,7 +97,7 @@ def make_conf_mat(X, Y, model, string_length, num_classes):
     bar2 = ProgressBar()
     for i in bar2(range(X.shape[0])):
         x, y = X[i, ...], np.argmax(Y[i, :])
-        pred = np.argmax(model.predict(x[None, ...])[0, ...])
+        pred = np.argmax(model.predict(x[None, None, ...])[0, ...])
         cm[y, pred] += 1
 
     fig = plt.figure()
@@ -125,8 +125,8 @@ def cm2excel(cm, string_length):
 def normalize(x, tx):
     return x - np.mean(x, 0), tx - np.mean(x, 0)
 
-def h5save(X, Y, testX, testY, string_length):
-    h5f = h5py.File(str(string_length) + '.h5', 'a')
+def h5save(X, Y, testX, testY, string_length, save_name):
+    h5f = h5py.File(str(string_length) + save_name, 'a')
     h5f.create_dataset('testX', data=testX)
     h5f.create_dataset('testY', data=testY)
     h5f.create_dataset('X', data=X)

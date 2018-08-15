@@ -1,12 +1,15 @@
 import tflearn
 from tflearn.layers.core import fully_connected as fc, input_data
 from tflearn.layers.estimator import regression
+from tflearn.layers.conv import conv_2d, global_avg_pool
 from tflearn.layers.recurrent import lstm
 from tflearn.layers.normalization import batch_normalization as bn
+from tflearn.activations import relu
 import numpy as np
 import os, sys
 from data_utilities import *
 import argparse
+import tensorflow as tf
 
 parser = argparse.ArgumentParser()
 
@@ -58,12 +61,27 @@ lr = args.learning_rate
 
 
 if __name__ == '__main__':
-    in_layer = input_data([None, str_len, 1])
-    lstm1 = lstm(in_layer, 300, return_seq=True)
+    in_layer = input_data([None, 1, str_len, 1])
+
+    # lstm branch
+    lstm1 = lstm(in_layer[:, 0, ...], 300, return_seq=True)
     lstm2 = lstm(lstm1, 300, return_seq=True)
     lstm3 = lstm(lstm2, 300, return_seq=True)
     lstm4 = lstm(lstm3, 300)
-    fc = fc(lstm4, num_classes, activation='softmax')
+
+    # cnn branch
+    conv1 = conv_2d(in_layer, 32, [1, 3], 1)
+    norm1 = relu(bn(conv1))
+    conv2 = conv_2d(norm1, 64, [1, 6], 2)
+    norm2 = relu(bn(conv2))
+    conv3 = conv_2d(norm2, 128, [1, 10], 2)
+    norm3 = relu(bn(conv3))
+    gap = tf.reshape(global_avg_pool(norm3), [-1, 128])
+
+    # merge lstm and conv layers
+    merged = tf.concat([lstm4, gap], 1)
+
+    fc = fc(merged, num_classes, activation='softmax')
     net = regression(fc, optimizer='adam', loss='categorical_crossentropy',
                                                     learning_rate=lr)
     model = tflearn.DNN(net, tensorboard_verbose=2, tensorboard_dir='.')
@@ -72,7 +90,8 @@ if __name__ == '__main__':
         X = load_data(keyword, str_len)
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
         X, testX = normalize(X, testX)
-        h5save(X, Y, testX, testY, str_len)
+        X, testX = X[:, None, ...], testX[:, None, ...]
+        h5save(X, Y, testX, testY, str_len, 'proten_predict_lstmcnn.h5')
 
         if Augmentation is True:
             X = augment(X)
@@ -81,12 +100,12 @@ if __name__ == '__main__':
         model.fit(X, Y, validation_set=(testX, testY), n_epoch=num_epochs,
                   shuffle=True, batch_size=256, show_metric=True,
                   snapshot_step=100,
-              run_id='Protein_predict_' + str(str_len))
-        model.save('Protein_predict_' + str(str_len))
+              run_id='Protein_predict_lstmcnn' + str(str_len))
+        model.save('Protein_predict_lstmcnn' + str(str_len))
     else:
         _, _, testX, testY = h5load(str_len)
-        model.load('Protein_predict_' + str(str_len))
+        model.load('Protein_predict_lstmcnn' + str(str_len))
         tflearn.config.init_training_mode()
         cm = make_conf_mat(testX, testY, model, str_len, num_classes)
         cm2excel(cm, str_len)
-        np.save('confusion_matrix_' + str(str_len), cm)
+        np.save('confusion_matrix_lstmcnn' + str(str_len), cm)
