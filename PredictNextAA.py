@@ -91,7 +91,7 @@ if __name__ == '__main__':
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
         X, testX = normalize(X, testX)
         X, testX = X[:, None, ...], testX[:, None, ...]
-        h5save(X, Y, testX, testY, str_len, 'proten_predict_lstmcnn.h5')
+        h5save(X, Y, testX, testY, str_len, 'protein_predict_lstmcnn.h5')
 
         if Augmentation is True:
             X = augment(X)
@@ -103,7 +103,7 @@ if __name__ == '__main__':
               run_id='Protein_predict_lstmcnn' + str(str_len))
         model.save('Protein_predict_lstmcnn' + str(str_len))
     else:
-        _, _, testX, testY = h5load(str_len)
+        _, _, testX, testY = h5load(str_len, 'protein_predict_lstmcnn.h5')
         model.load('Protein_predict_lstmcnn' + str(str_len))
         tflearn.config.init_training_mode()
         cm = make_conf_mat(testX, testY, model, str_len, num_classes)

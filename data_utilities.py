@@ -97,7 +97,7 @@ def make_conf_mat(X, Y, model, string_length, num_classes):
     bar2 = ProgressBar()
     for i in bar2(range(X.shape[0])):
         x, y = X[i, ...], np.argmax(Y[i, :])
-        pred = np.argmax(model.predict(x[None, None, ...])[0, ...])
+        pred = np.argmax(model.predict(x[None, ...])[0, ...])
         cm[y, pred] += 1
 
     fig = plt.figure()
@@ -135,8 +135,8 @@ def h5save(X, Y, testX, testY, string_length, save_name):
     return
 
 
-def h5load(string_length):
-    h5f = h5py.File(str(string_length) + '.h5', 'r')
+def h5load(string_length, name):
+    h5f = h5py.File(str(string_length) + name, 'r')
     x, y = h5f['X'], h5f['Y']
     tx, ty = h5f['testX'], h5f['testY']
     return x, y, tx, ty
