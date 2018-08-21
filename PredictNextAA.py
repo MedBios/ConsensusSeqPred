@@ -48,6 +48,11 @@ parser.add_argument(
     type=float,
     default=.001,
     help='Learning rate for training. Default .001.')
+parser.add_argument(
+    '--western_blot',
+    type=bool,
+    default=False,
+    help='visualize all proteins together to see trends.')
 
 args = parser.parse_args()
 str_len = args.string_length
@@ -58,6 +63,7 @@ num_classes = 25
 keyword = args.keyword
 num_epochs = args.num_epochs
 lr = args.learning_rate
+westernBlot = args.western_blot
 
 
 if __name__ == '__main__':
@@ -87,7 +93,7 @@ if __name__ == '__main__':
     model = tflearn.DNN(net, tensorboard_verbose=2, tensorboard_dir='.')
 
     if Train in ['Y', 'y']:
-        X = load_data(keyword, str_len, 20000)
+        X = load_data(keyword, str_len, 20000, westernBlot)
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
         X, testX = normalize(X, testX)
         X, testX = X[:, None, ...], testX[:, None, ...]

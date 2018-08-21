@@ -123,10 +123,13 @@ def list2img(X):
     return
 
 
-def load_data(kw, str_len, numxs):
+def load_data(kw, str_len, numxs, western_blot):
     X = get_uniprot_data(kw, numxs)
     X = letter2num(X)
-    list2img(X)
+
+    if western_blot:
+        list2img(X)
+
     X = cutStrings(X, str_len)
 
     return X
