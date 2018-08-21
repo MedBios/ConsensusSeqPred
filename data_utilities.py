@@ -9,6 +9,7 @@ from progressbar import ProgressBar
 import glob
 from random import random
 import h5py
+from scipy.misc import imshow
 
 
 def get_uniprot_data(kw, numxs=None):
@@ -34,28 +35,32 @@ def get_uniprot_data(kw, numxs=None):
     return data
 
 
-def cut_and_label(seqs, length, padlen=None):
+def letter2num(seqs):
+    seqList = []
+
+    for seq in seqs:
+        seqNums = []
+        for letter in seq:
+            seqNums.append(max(ord(letter)-97, 0))
+        seqList.append(seqNums)
+
+    return seqList
+
+
+def cutStrings(seqs, length, padlen=None):
     if padlen is None:
         padlen = length - 1
 
     x = np.zeros([0, length+1, 1])
     count = 0
-    first_letter = []
-    last_letter = []
-    bar = ProgressBar()
 
-    for seq in bar(seqs):
-        seq_nums = []
-        for letter in seq:
-            seq_nums.append(max(ord(letter)-97, 0))
-        first_letter.append(seq_nums[0])
-        last_letter.append(seq_nums[-1])
-        padded_seq = np.pad(np.asarray(seq_nums), (padlen, 0),
-                            'constant', constant_values=22.)
+    for seq in seqs:
+        paddedSeq = np.pad(np.asarray(seq), (padlen, 0),
+                           'constant', constant_values=22.)
 
-        if padded_seq.size > length + 1:
-            cut_seq = vaw(padded_seq, (length + 1, ))
-            x = np.concatenate((x, cut_seq[..., None]))
+        if paddedSeq.size > length + 1:
+            cutSeq = vaw(paddedSeq, (length + 1, ))
+            x = np.concatenate((x, cutSeq[..., None]))
             count += 1
         else:
             continue
@@ -84,9 +89,45 @@ def augment(strings):
     return strings
 
 
-def load_data(kw, str_len):
-    X = get_uniprot_data(kw)
-    X = cut_and_label(X, str_len)
+def lenSort(seqs, ascending=True):
+  for i in range(1, len(seqs)):
+    current, prevInd = seqs[i], i - 1
+
+    if ascending:
+      while prevInd >= 0 and len(seqs[prevInd]) > len(current):
+        seqs[prevInd+1] = seqs[prevInd]
+        prevInd -= 1
+    else:
+      while prevInd >= 0 and len(seqs[prevInd]) < len(current):
+        seqs[prevInd+1] = seqs[prevInd]
+        prevInd -= 1
+
+    seqs[prevInd+1] = current
+
+  return seqs
+
+
+def list2img(X):
+    X = lenSort(X, ascending=False)
+    maxLength = len(X[0])
+    strings = np.zeros([len(X), maxLength])
+    count = 0
+
+    for x in X:
+        padlen = maxLength - len(x)
+        paddedString = np.pad(np.asarray(x), (0, padlen), 'constant', constant_values=22.)
+        strings[count, :paddedString.size] = paddedString
+        count += 1
+
+    imshow(strings)
+    return
+
+
+def load_data(kw, str_len, numxs):
+    X = get_uniprot_data(kw, numxs)
+    X = letter2num(X)
+    list2img(X)
+    X = cutStrings(X, str_len)
 
     return X
 

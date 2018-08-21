@@ -87,7 +87,7 @@ if __name__ == '__main__':
     model = tflearn.DNN(net, tensorboard_verbose=2, tensorboard_dir='.')
 
     if Train in ['Y', 'y']:
-        X = load_data(keyword, str_len)
+        X = load_data(keyword, str_len, 20000)
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
         X, testX = normalize(X, testX)
         X, testX = X[:, None, ...], testX[:, None, ...]
