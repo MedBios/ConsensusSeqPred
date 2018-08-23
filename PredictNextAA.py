@@ -50,7 +50,7 @@ parser.add_argument(
     default=.001,
     help='Learning rate for training. Default .001.')
 parser.add_argument(
-    '--western_blot',
+    '--view',
     type=bool,
     default=False,
     help='visualize all proteins together to see trends. Default False.')
@@ -59,6 +59,10 @@ parser.add_argument(
     type=int,
     default=1,
     help='embedding size. Default 1 (no embedding).')
+parser.add_argument(
+    '--numProteins',
+    type=int,
+    help='The number of proteins you want from UniProt. Default is all of them.')
 
 args = parser.parse_args()
 str_len = args.string_length
@@ -69,8 +73,9 @@ num_classes = 25
 keyword = args.keyword
 num_epochs = args.num_epochs
 lr = args.learning_rate
-westernBlot = args.western_blot
+view = args.view
 emb = args.embedding
+numProteins = args.numProteins
 
 
 if __name__ == '__main__':
@@ -106,7 +111,7 @@ if __name__ == '__main__':
     model = tflearn.DNN(net, tensorboard_verbose=2, tensorboard_dir='.')
 
     if Train in ['Y', 'y']:
-        X = load_data(keyword, str_len, 20000, westernBlot)
+        X = load_data(keyword, str_len, numProteins, view)
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
 
         X, testX = X[:, None, ...], testX[:, None, ...]

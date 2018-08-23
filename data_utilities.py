@@ -34,6 +34,7 @@ def get_uniprot_data(kw, numxs=None):
     data = data.split('\n')
     data = data[1:-1]
     data = list(map(lambda x:x.lower(), data))
+
     return data
 
 
@@ -125,11 +126,11 @@ def list2img(X):
     return
 
 
-def load_data(kw, str_len, numxs, western_blot):
+def load_data(kw, str_len, numxs, view):
     X = get_uniprot_data(kw, numxs)
     X = letter2num(X)
 
-    if western_blot:
+    if view:
         list2img(X)
 
     X = cutStrings(X, str_len)
