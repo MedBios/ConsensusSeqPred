@@ -4,6 +4,7 @@ from tflearn.layers.estimator import regression
 from tflearn.layers.conv import conv_2d, global_avg_pool
 from tflearn.layers.recurrent import lstm
 from tflearn.layers.normalization import batch_normalization as bn
+from tflearn.layers.embedding_ops import embedding
 from tflearn.activations import relu
 import numpy as np
 import os, sys
@@ -16,12 +17,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     '--string_length',
     type=int,
-    default=50,
-    help='What is the string length you want the network to take as input? Default 50.')
+    required=True,
+    help='What is the string length you want the network to take as input?')
 parser.add_argument(
     '--train',
     type=str,
-    required=True,
+    default='y',
     help='y to train network (Default), n to load and test a trained network.')
 parser.add_argument(
     '--validation_percent',
@@ -52,7 +53,12 @@ parser.add_argument(
     '--western_blot',
     type=bool,
     default=False,
-    help='visualize all proteins together to see trends.')
+    help='visualize all proteins together to see trends. Default False.')
+parser.add_argument(
+    '--embedding',
+    type=int,
+    default=1,
+    help='embedding size. Default 1 (no embedding).')
 
 args = parser.parse_args()
 str_len = args.string_length
@@ -64,18 +70,25 @@ keyword = args.keyword
 num_epochs = args.num_epochs
 lr = args.learning_rate
 westernBlot = args.western_blot
+emb = args.embedding
 
 
 if __name__ == '__main__':
     in_layer = input_data([None, 1, str_len, 1])
 
+    if emb > 1:
+        lstm1 = lstm(embedding(in_layer[:, 0, :, 0], 26, emb),
+                               300, return_seq=True)
+    else:
+        lstm1 = lstm(in_layer[:, 0, ...], 300, return_seq=True)
+
     # lstm branch
-    lstm1 = lstm(in_layer[:, 0, ...], 300, return_seq=True)
     lstm2 = lstm(lstm1, 300, return_seq=True)
     lstm3 = lstm(lstm2, 300, return_seq=True)
     lstm4 = lstm(lstm3, 300)
 
     # cnn branch
+    in_layer = bn(in_layer)
     conv1 = conv_2d(in_layer, 32, [1, 3], 1)
     norm1 = relu(bn(conv1))
     conv2 = conv_2d(norm1, 64, [1, 6], 2)
@@ -95,7 +108,7 @@ if __name__ == '__main__':
     if Train in ['Y', 'y']:
         X = load_data(keyword, str_len, 20000, westernBlot)
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
-        X, testX = normalize(X, testX)
+
         X, testX = X[:, None, ...], testX[:, None, ...]
         h5save(X, Y, testX, testY, str_len, 'protein_predict_lstmcnn.h5')
 
@@ -110,6 +123,10 @@ if __name__ == '__main__':
         model.save('Protein_predict_lstmcnn' + str(str_len))
     else:
         _, _, testX, testY = h5load(str_len, 'protein_predict_lstmcnn.h5')
+
+        if emb > 1:
+            embDistance('Protein_predict_lstmcnn' + str(str_len), emb)
+
         model.load('Protein_predict_lstmcnn' + str(str_len))
         tflearn.config.init_training_mode()
         cm = make_conf_mat(testX, testY, model, str_len, num_classes)

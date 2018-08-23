@@ -10,6 +10,8 @@ import glob
 from random import random
 import h5py
 from scipy.misc import imshow
+from tensorflow.python import pywrap_tensorflow
+from math import factorial
 
 
 def get_uniprot_data(kw, numxs=None):
@@ -154,6 +156,23 @@ def make_conf_mat(X, Y, model, string_length, num_classes):
 
     return cm
 
+def embDistance(filename, dims):
+    reader = pywrap_tensorflow.NewCheckpointReader(filename)
+    embeddingWeights = reader.get_tensor('Embedding/W')
+    wb = Workbook()
+    emb1 = wb.add_sheet('embedding_distances')
+    count = 0
+
+    for i in range(embeddingWeights.shape[0]-1, -1, -1):
+        for j in range(i-1, -1, -1):
+            w1, w2 = embeddingWeights[i, :], embeddingWeights[j, :]
+            emb1.write(count, 0, float(np.mean((w1 - w2)**2)))
+            emb1.write(count, 1, chr(i+97) + chr(j+97))
+            count += 1
+
+    wb.save('embedding_distances.xlsx')
+    return
+
 
 def cm2excel(cm, string_length):
     wb = Workbook()
@@ -165,9 +184,6 @@ def cm2excel(cm, string_length):
     wb.save('Confusion_matrix_LS' + str(string_length) + '.xlsx')
     return
 
-
-def normalize(x, tx):
-    return x - np.mean(x, 0), tx - np.mean(x, 0)
 
 def h5save(X, Y, testX, testY, string_length, save_name):
     h5f = h5py.File(str(string_length) + save_name, 'a')
