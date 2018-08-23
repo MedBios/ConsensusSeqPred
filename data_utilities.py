@@ -58,7 +58,7 @@ def cutStrings(seqs, length, padlen=None):
 
     for seq in seqs:
         paddedSeq = np.pad(np.asarray(seq), (padlen, 0),
-                           'constant', constant_values=22.)
+                           'constant', constant_values=23.)
 
         if paddedSeq.size > length + 1:
             cutSeq = vaw(paddedSeq, (length + 1, ))
@@ -117,7 +117,7 @@ def list2img(X):
 
     for x in X:
         padlen = maxLength - len(x)
-        paddedString = np.pad(np.asarray(x), (0, padlen), 'constant', constant_values=22.)
+        paddedString = np.pad(np.asarray(x), (0, padlen), 'constant', constant_values=23.)
         strings[count, :paddedString.size] = paddedString
         count += 1
 
