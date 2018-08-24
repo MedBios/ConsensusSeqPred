@@ -79,7 +79,7 @@ numProteins = args.numProteins
 
 
 if __name__ == '__main__':
-    in_layer = input_data([None, 1, str_len, 1])
+    in_layer = input_data([None, 1, str_len+2, 1])
 
     if emb > 1:
         lstm1 = lstm(embedding(in_layer[:, 0, :, 0], 26, emb),

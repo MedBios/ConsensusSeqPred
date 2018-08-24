@@ -54,7 +54,7 @@ def cutStrings(seqs, length, padlen=None):
     if padlen is None:
         padlen = length - 1
 
-    x = np.zeros([0, length+1, 1])
+    x = np.zeros([0, length+3, 1])
     count = 0
 
     for seq in seqs:
@@ -63,7 +63,9 @@ def cutStrings(seqs, length, padlen=None):
 
         if paddedSeq.size > length + 1:
             cutSeq = vaw(paddedSeq, (length + 1, ))
-            x = np.concatenate((x, cutSeq[..., None]))
+            indForward = np.ones([cutSeq.shape[0], 1]) * np.arange(0., cutSeq.shape[0], 1.)[:, None]
+            cutSeq = np.concatenate((indForward, indForward[::-1, :], cutSeq), 1)
+            x = np.concatenate((x, cutSeq[..., None]), 0)
             count += 1
         else:
             continue
@@ -83,13 +85,6 @@ def make_labels(X, validation_size, num_classes):
     testY, Y = Y[rtest, :], np.delete(Y, rtest, axis=0)
 
     return X[:, :-1, :], Y, testX[:, :-1, :], testY
-
-
-def augment(strings):
-    for str in range(strings.shape[0]):
-        if random() > 0.5:
-            strings[str, ...] = strings[str, ::-1, :]
-    return strings
 
 
 def lenSort(seqs, ascending=True):
