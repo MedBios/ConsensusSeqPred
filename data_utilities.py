@@ -50,41 +50,41 @@ def letter2num(seqs):
     return seqList
 
 
-def cutStrings(seqs, length, padlen=None):
-    if padlen is None:
-        padlen = length - 1
-
-    x = np.zeros([0, length+3, 1])
+def cutStrings(seqs, length):
+    X = np.zeros([0, length*2+3])
     count = 0
+    bar = ProgressBar()
 
-    for seq in seqs:
-        paddedSeq = np.pad(np.asarray(seq), (padlen, 0),
+    for seq in bar(seqs):
+        paddedSeq = np.pad(np.asarray(seq), (length, length),
                            'constant', constant_values=23.)
 
-        if paddedSeq.size > length + 1:
-            cutSeq = vaw(paddedSeq, (length + 1, ))
-            indForward = np.ones([cutSeq.shape[0], 1]) * np.arange(0., cutSeq.shape[0], 1.)[:, None]
-            cutSeq = np.concatenate((indForward, indForward[::-1, :], cutSeq), 1)
-            x = np.concatenate((x, cutSeq[..., None]), 0)
+        if paddedSeq.size > length*2:
+            cutSeq = vaw(paddedSeq, (length*2+1, ))
+            label = np.ones([cutSeq.shape[0], ]) * cutSeq[:, length]
+            cutSeq = np.delete(cutSeq, length, axis=1)
+            indLabel = np.ones([cutSeq.shape[0], 1]) * np.arange(cutSeq.shape[0])[:, None]
+            cutSeq = np.concatenate((indLabel, indLabel[::-1, :], cutSeq, label[:, None]), 1)
+            X = np.concatenate((X, cutSeq), 0)
             count += 1
         else:
             continue
 
     print('Used {} proteins.'.format(count))
-    return x
+    return X
 
 
 def make_labels(X, validation_size, num_classes):
     Y = np.zeros([X.shape[0], num_classes])
     for i in range(X.shape[0]):
-        Y[i, int(X[i, -1, 0])] = 1.
+        Y[i, int(X[i, -1])] = 1.
 
     n_val = int(X.shape[0]*validation_size)
     rtest = np.random.randint(0, X.shape[0], n_val)
     testX, X = X[rtest, ...], np.delete(X, rtest, axis=0)
     testY, Y = Y[rtest, :], np.delete(Y, rtest, axis=0)
 
-    return X[:, :-1, :], Y, testX[:, :-1, :], testY
+    return X[:, :-1], Y, testX[:, :-1], testY
 
 
 def lenSort(seqs, ascending=True):
