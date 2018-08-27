@@ -63,13 +63,14 @@ args = parser.parse_args()
 str_len = args.string_length
 val_f = args.validation_percent
 Train = args.train
-num_classes = 25
+num_classes = 26
 keyword = args.keyword
 num_epochs = args.num_epochs
 lr = args.learning_rate
 view = args.view
 emb = args.embedding
 numProteins = args.numProteins
+name = 'string_length_' + str(str_len) + '_' + keyword + '_embedding_' + str(emb)
 
 
 if __name__ == '__main__':
@@ -89,17 +90,17 @@ if __name__ == '__main__':
 
     # cnn branch
     in_layer = bn(in_layer)
-    conv1 = conv_2d(in_layer, 32, [1, 3], 1)
+    conv1 = conv_2d(in_layer, 64, [1, 10], 1)
     norm1 = relu(bn(conv1))
-    conv2 = conv_2d(norm1, 64, [1, 6], 2)
+    conv2 = conv_2d(norm1, 128, [1, 6], 2)
     norm2 = relu(bn(conv2))
-    conv3 = conv_2d(norm2, 128, [1, 10], 2)
+    conv3 = conv_2d(norm2, 256, [1, 3], 2)
     norm3 = relu(bn(conv3))
-    gap = tf.reshape(global_avg_pool(norm3), [-1, 128])
+    gap = tf.reshape(global_avg_pool(norm3), [-1, 256])
 
     # fully-connected branch
-    fc_ind = fc(indices, 10, activation='tanh')
-    fc_ind2 = fc(fc_ind, 10, activation='tanh')
+    fc_ind = fc(indices, 50, activation='tanh')
+    fc_ind2 = fc(fc_ind, 50, activation='tanh')
 
     # merge lstm, conv, and fc layers
     merged = tf.concat([lstm4, gap, fc_ind2], 1)
@@ -114,22 +115,23 @@ if __name__ == '__main__':
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
         print(X.shape)
         X, testX = X[:, None, :, None], testX[:, None, :, None]
-        h5save(X, Y, testX, testY, str_len, 'protein_predict_lstmcnn.h5')
+        h5save(X, Y, testX, testY, str_len, name + '_data.h5')
 
         os.system('tensorboard --logdir=. &')
         model.fit(X, Y, validation_set=(testX, testY), n_epoch=num_epochs,
                   shuffle=True, batch_size=256, show_metric=True,
                   snapshot_step=100,
-              run_id='Protein_predict_lstmcnn' + str(str_len))
-        model.save('Protein_predict_lstmcnn' + str(str_len))
+              run_id=name)
+        model.save(name)
     else:
-        _, _, testX, testY = h5load(str_len, 'protein_predict_lstmcnn.h5')
+        _, _, testX, testY = h5load(str_len, name + '_data.h5')
 
         if emb > 1:
-            embDistance('Protein_predict_lstmcnn' + str(str_len), emb)
+            embDistance(name, emb)
 
-        model.load('Protein_predict_lstmcnn' + str(str_len))
+        model.load(name)
         tflearn.config.init_training_mode()
+        vizIndexWeights(name)
         cm = make_conf_mat(testX, testY, model, str_len, num_classes)
-        cm2excel(cm, str_len)
-        np.save('confusion_matrix_lstmcnn' + str(str_len), cm)
+        cm2excel(cm, str_len, name)
+        np.save('confusion_matrix_lstmcnn_' + name, cm)
