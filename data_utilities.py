@@ -38,6 +38,24 @@ def get_uniprot_data(kw, numxs=None):
     return data
 
 
+def letter_frequency(data):
+    l = np.zeros([26, ])
+    wb = Workbook()
+    sheet1 = wb.add_sheet('letters')
+    for d in data:
+        for D in d:
+            l[max(ord(D)-97, 0)] += 1
+
+    for i in range(l.size):
+        sheet1.write(i, 0, chr(i + 97))
+        sheet1.write(i, 1, l[i])
+
+    print(l)
+    wb.save('LetterFrequency.xlsx')
+
+    return
+
+
 def letter2num(seqs):
     seqList = []
 
@@ -121,10 +139,12 @@ def list2img(X):
     return
 
 
-def load_data(kw, str_len, numxs, view):
+def load_data(kw, str_len, numxs, view, letter_freq):
     X = get_uniprot_data(kw, numxs)
+    if letter_freq:
+        letter_frequency(X)
+    
     X = letter2num(X)
-
     if view:
         list2img(X)
 
