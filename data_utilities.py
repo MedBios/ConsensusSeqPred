@@ -69,6 +69,7 @@ def letter2num(seqs):
 
 
 def cutStrings(seqs, length):
+    print('Preparing Data...')
     X = np.zeros([0, length*2+3])
     count = 0
     bar = ProgressBar()
@@ -143,7 +144,7 @@ def load_data(kw, str_len, numxs, view, letter_freq):
     X = get_uniprot_data(kw, numxs)
     if letter_freq:
         letter_frequency(X)
-    
+
     X = letter2num(X)
     if view:
         list2img(X)
@@ -190,6 +191,31 @@ def embDistance(filename, dims):
 
     wb.save('embedding_distances_' + filename + '.xlsx')
     return
+
+
+def output_list2img(X, model, string_length):
+    seq_lens = []
+    for x in X:
+        seq_lens.append(len(x))
+
+    X = letter2num(X)
+    X = cutStrings(X, string_length)
+    count = 0
+    sublist = []
+    masterlist = []
+
+    print('Making output image...')
+    bar = ProgressBar()
+    for seq_len in bar(seq_lens):
+        for i in range(seq_len):
+            x = X[count+i, :-1]
+            y_hat = np.argmax(model.predict(x[None, None, :, None])[0, :])
+            sublist.append(chr(y_hat + 97))
+        masterlist.append(sublist)
+
+    list2img(masterlist)
+    return
+
 
 
 def cm2excel(cm, string_length, name):

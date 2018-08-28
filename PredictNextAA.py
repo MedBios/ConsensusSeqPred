@@ -63,6 +63,11 @@ parser.add_argument(
     type=bool,
     default=False,
     help='View a histogram of all amino acids in proteins with keyword. Default False.')
+parser.add_argument(
+    '--view_outputs',
+    type=bool,
+    default=False,
+    help='Plot the outputs of the network as an image. Default False.')
 
 args = parser.parse_args()
 str_len = args.string_length
@@ -75,11 +80,18 @@ lr = args.learning_rate
 view = args.view
 emb = args.embedding
 numProteins = args.numProteins
-name = 'string_length_' + str(str_len) + '_' + keyword + '_embedding_' + str(emb)
 lhist = args.view_letter_histogram
+output_view = args.view_outputs
+name = 'string_length_' + str(str_len) + '_' + keyword + '_embedding_' + str(emb)
+
 
 
 if __name__ == '__main__':
+
+################################################################################
+#----------------------------------- Model -------------------------------------
+################################################################################
+
     in_layer = input_data([None, 1, str_len*2+2, 1])
     indices = in_layer[:, 0, :2, 0]
 
@@ -116,6 +128,10 @@ if __name__ == '__main__':
                                                     learning_rate=lr)
     model = tflearn.DNN(net, tensorboard_verbose=2, tensorboard_dir='.')
 
+################################################################################
+#-------------------------------------------------------------------------------
+################################################################################
+
     if Train in ['Y', 'y']:
         X = load_data(keyword, str_len, numProteins, view, lhist)
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
@@ -137,6 +153,11 @@ if __name__ == '__main__':
 
         model.load(name)
         tflearn.config.init_training_mode()
+
+        if output_view:
+            X = get_uniprot_data(keyword)
+            output_list2img(X, model, str_len)
+
         vizIndexWeights(name)
         cm = make_conf_mat(testX, testY, model, str_len, num_classes)
         cm2excel(cm, str_len, name)
