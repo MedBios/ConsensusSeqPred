@@ -58,6 +58,11 @@ parser.add_argument(
     '--numProteins',
     type=int,
     help='The number of proteins you want from UniProt. Default is all of them.')
+parser.add_argument(
+    '--view_letter_histogram',
+    type=bool,
+    default=False,
+    help='View a histogram of all amino acids in proteins with keyword. Default False.')
 
 args = parser.parse_args()
 str_len = args.string_length
@@ -71,6 +76,7 @@ view = args.view
 emb = args.embedding
 numProteins = args.numProteins
 name = 'string_length_' + str(str_len) + '_' + keyword + '_embedding_' + str(emb)
+lhist = args.view_letter_histogram
 
 
 if __name__ == '__main__':
@@ -111,7 +117,7 @@ if __name__ == '__main__':
     model = tflearn.DNN(net, tensorboard_verbose=2, tensorboard_dir='.')
 
     if Train in ['Y', 'y']:
-        X = load_data(keyword, str_len, numProteins, view)
+        X = load_data(keyword, str_len, numProteins, view, lhist)
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
         print(X.shape)
         X, testX = X[:, None, :, None], testX[:, None, :, None]
