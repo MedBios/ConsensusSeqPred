@@ -200,18 +200,24 @@ def output_list2img(X, model, string_length):
 
     X = letter2num(X)
     X = cutStrings(X, string_length)
-    count = 0
-    sublist = []
     masterlist = []
+    count = 0
 
     print('Making output image...')
     bar = ProgressBar()
-    for seq_len in bar(seq_lens):
-        for i in range(seq_len):
-            x = X[count+i, :-1]
-            y_hat = np.argmax(model.predict(x[None, None, :, None])[0, :])
-            sublist.append(chr(y_hat + 97))
-        masterlist.append(sublist)
+
+    sublist = []
+    for i in bar(range(X.shape[0])):
+        if count > seq_lens[0] - 1:
+            masterlist.append(sublist)
+            del seq_lens[0]
+            sublist = []
+            count = 0
+
+        x = X[i, :-1]
+        y_hat = np.argmax(model.predict(x[None, None, :, None])[0, :])
+        sublist.append(y_hat)
+        count += 1
 
     list2img(masterlist)
     return
