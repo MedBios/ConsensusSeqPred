@@ -194,30 +194,54 @@ def embDistance(filename, dims):
 
 
 def output_list2img(X, model, string_length):
-    seq_lens = []
-    for x in X:
-        seq_lens.append(len(x))
-
     X = letter2num(X)
-    X = cutStrings(X, string_length)
-    masterlist = []
-    count = 0
-
-    print('Making output image...')
     bar = ProgressBar()
 
-    sublist = []
-    for i in bar(range(X.shape[0])):
-        if count > seq_lens[0] - 1:
-            masterlist.append(sublist)
-            del seq_lens[0]
-            sublist = []
-            count = 0
+    for i in bar(range(len(X))):
+        x = X[i]
+        x_array = np.asarray(x)
+        x_array = np.pad(x_array, (string_length, string_length), 'constant',
+                         constant_values=23.)
 
-        x = X[i, :-1]
-        y_hat = np.argmax(model.predict(x[None, None, :, None])[0, :])
-        sublist.append(y_hat)
-        count += 1
+        for j in range(string_length, x_array.size-string_length):
+            x_prev = x_array[j-string_length:j]
+            x_post = x_array[j+1:j+1+string_length]
+            inds = np.array([j, x_array.size-j])
+            x_in = np.concatenate((inds, x_prev, x_post))
+            y_hat = model.predict(x_in[None, None, :, None])
+            x[j - string_length] = np.argmax(y_hat)
+
+        X[i] = x
+
+    list2img(X)
+    return
+
+
+
+    # seq_lens = []
+    # for x in X:
+    #     seq_lens.append(len(x))
+    #
+    # X = letter2num(X)
+    # X = cutStrings(X, string_length)
+    # masterlist = []
+    # count = 0
+    #
+    # print('Making output image...')
+    # bar = ProgressBar()
+    #
+    # sublist = []
+    # for i in bar(range(X.shape[0])):
+    #     if count > seq_lens[0] - 1:
+    #         masterlist.append(sublist)
+    #         del seq_lens[0]
+    #         sublist = []
+    #         count = 0
+    #
+    #     x = X[i, :-1]
+    #     y_hat = np.argmax(model.predict(x[None, None, :, None])[0, :])
+    #     sublist.append(y_hat)
+    #     count += 1
 
     list2img(masterlist)
     return
