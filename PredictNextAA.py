@@ -1,16 +1,8 @@
 import tflearn
-from tflearn.layers.core import fully_connected as fc, input_data
-from tflearn.layers.estimator import regression
-from tflearn.layers.conv import conv_2d, global_avg_pool
-from tflearn.layers.recurrent import lstm
-from tflearn.layers.normalization import batch_normalization as bn
-from tflearn.layers.embedding_ops import embedding
-from tflearn.activations import relu
 import numpy as np
 import os, sys
 from data_utilities import *
 import argparse
-import tensorflow as tf
 
 parser = argparse.ArgumentParser()
 
@@ -87,50 +79,7 @@ name = 'string_length_' + str(str_len) + '_' + keyword + '_embedding_' + str(emb
 
 
 if __name__ == '__main__':
-
-################################################################################
-#----------------------------------- Model -------------------------------------
-################################################################################
-
-    in_layer = input_data([None, 1, str_len*2+2, 1])
-    indices = in_layer[:, 0, :2, 0]
-
-    if emb > 1:
-        lstm1 = lstm(embedding(in_layer[:, 0, 2:, 0], 26, emb),
-                               300, return_seq=True)
-    else:
-        lstm1 = lstm(in_layer[:, 0, 2:, :], 300, return_seq=True)
-
-    # lstm branch
-    lstm2 = lstm(lstm1, 300, return_seq=True)
-    lstm3 = lstm(lstm2, 300, return_seq=True)
-    lstm4 = lstm(lstm3, 300)
-
-    # cnn branch
-    in_layer = bn(in_layer)
-    conv1 = conv_2d(in_layer, 64, [1, 10], 1)
-    norm1 = relu(bn(conv1))
-    conv2 = conv_2d(norm1, 128, [1, 6], 2)
-    norm2 = relu(bn(conv2))
-    conv3 = conv_2d(norm2, 256, [1, 3], 2)
-    norm3 = relu(bn(conv3))
-    gap = tf.reshape(global_avg_pool(norm3), [-1, 256])
-
-    # fully-connected branch
-    fc_ind = fc(indices, 50, activation='tanh')
-    fc_ind2 = fc(fc_ind, 50, activation='tanh')
-
-    # merge lstm, conv, and fc layers
-    merged = tf.concat([lstm4, gap, fc_ind2], 1)
-
-    fc = fc(merged, num_classes, activation='softmax')
-    net = regression(fc, optimizer='adam', loss='categorical_crossentropy',
-                                                    learning_rate=lr)
-    model = tflearn.DNN(net, tensorboard_verbose=2, tensorboard_dir='.')
-
-################################################################################
-#-------------------------------------------------------------------------------
-################################################################################
+    model = ProteinNet(str_len, emb, lr, num_classes)
 
     if Train in ['Y', 'y']:
         X = load_data(keyword, str_len, numProteins, view, lhist)
