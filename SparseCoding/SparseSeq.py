@@ -6,82 +6,100 @@ Created on Wed Sep 26 12:44:33 2018
 @author: mpcr
 """
 
+#self-organizing map#
+
+
+#import the libraries and utilities
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-import progressbar
+import os
+import time
+import cv2
+from scipy.misc import bytescale
 
+##get data and format data
 #import excel file data#
-##some code that does that^
+data = np.genfromtxt('DE0.csv', delimiter=',', missing_values='NA', filling_values=1, skip_header=2, usecols=range(1,7))
 
-#define some things about the data
-x = tf.placeholder(tf.float32, shape=[None, 784])
-y_true = tf.placeholder(tf.float32, shape=[None, 10])
+#view the data shape
+print (data.shape)
 
-sparsity_constraint = tf.placeholder(tf.float32)
+#remove the data inputs that start with value 0
+remove = data[:,0] != 0
+data = data[remove,:]
+removeNA = data[:, -1] != 1
+data = data[removeNA, :]
 
-#build the network#
-#define variables
-with tf.variable_scope('NeuralLayer'):
-    W = tf.get_variable('W', shape=[784, 784], initializer=tf.random_normal_initializer(stddev=1e-1))
-    b = tf.get_variable('b', shape=[784], initializer=tf.constant_initializer(0.1))
+##seperate data into training and testing set
+#colelct test data
+testnum = int(0.1 * data.shape[0])
+randtestind = np.random.randint(0,data.shape[0], testnum)
+testdata = data[randtestind, :]
+#remove test data from all data
+data = np.delete(arr=data, obj=randtestind, axis= 0)
 
-    z = tf.matmul(x, W) + b
-    a = tf.nn.relu(z)
+print testdata.shape
+print data.shape
 
-    # We graph the average density of neurons activation
-    average_density = tf.reduce_mean(tf.reduce_sum(tf.cast((a > 0), tf.float32), axis=[1]))
-    tf.summary.scalar('AverageDensity', average_density)
-with tf.variable_scope('SoftmaxLayer'):
-    W_s = tf.get_variable('W_s', shape=[784, 10], initializer=tf.random_normal_initializer(stddev=1e-1))
-    b_s = tf.get_variable('b_s', shape=[10], initializer=tf.constant_initializer(0.1))
 
-    out = tf.matmul(a, W_s) + b_s
-    y = tf.nn.softmax(out)
-with tf.variable_scope('Loss'):
-    epsilon = 1e-7 # After some training, y can be 0 on some classes which lead to NaN 
-    cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_true * tf.log(y + epsilon), axis=[1]))
-    # We add our sparsity constraint on the activations
-    loss = cross_entropy + sparsity_constraint * tf.reduce_sum(a)
+# normalize the data
+data -= np.mean(data, 0)
+data /= np.std(data, 0)
+print(np.mean(data), np.std(data))
+plt.hist(data[:,0], bins=100)
+plt.show()
 
-    tf.summary.scalar('loss', loss) # Graph the loss
-summaries = tf.summary.merge_all() # This is convenient
+#check data shape
+print(data.shape)
 
-with tf.variable_scope('Accuracy'):
-    correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_true, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    acc_summary = tf.summary.scalar('accuracy', accuracy) 
+##define variables/parameters for network--> build the network
+#define numper of input values (columns)
+n_in = data.shape[1]
+#define weight matrices multiplication and number of nodes
+w = np.random.randn(3, n_in) * 0.1
+#learning rate
+lr = 0.01
+#number of iterations to update parameters/nodes
+n_iters = 10000
+
+#do the training
+for i in range(n_iters):
+    randsamples = np.random.randint(0, data.shape[0], 1)[0] #get randdom samples
+    rand_in = data[randsamples, :] #get the random samples from the dataset
+    #get nodes to look at data and asses activation
+    difference = w - rand_in
+    #print difference.shape
+    #how to tell activation of each node
+    dist = np.sum(np.absolute(difference), 1)
+    #update most activated for lowest distance
+    best = np.argmin(dist)
+    #update weights
+    w_eligible = w[best,:]
+    w_eligible += (lr * (rand_in - w_eligible))
+    w[best,:] = w_eligible
+    cv2.namedWindow('weights', cv2.WINDOW_NORMAL) #creates window to show image in
+    cv2.imshow('weights', bytescale(w)) #show this in the window
+    cv2.waitKey(1) #pause every 1 ms after showing image
+
+##validation
+#run testdata through to see which node activated the most
+
+node1w = w[0, :]
+node2w = w[1, :]
+node3w = w[2, :]
+
+difference1 = node1w - testdata
+dist1 = np.sum(np.absolute(difference1), 1)
+
+difference2 = node2w - testdata
+dist2 = np.sum(np.absolute(difference2), 1)
+
+difference3 = node3w - testdata
+dist3 = np.sum(np.absolute(difference3), 1)
+    
+#cv2.destroyAllWindows() # destroy the cv2 window
+print w
+
     
     
-#train network
-adam = tf.train.AdamOptimizer(learning_rate=1e-3)
-train_op = adam.minimize(loss)
-sess = None
-# We iterate over different sparsity constraint
-for sc in [0, 1e-4, 5e-4, 1e-3, 2.7e-3]:
-    result_folder = dir + '/results/' + str(int(time.time())) + '-fc-sc' + str(sc)
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sw = tf.summary.FileWriter(result_folder, sess.graph)
-        
-        for i in range(20000):
-            batch = mnist.train.next_batch(100)
-            current_loss, summary, _ = sess.run([loss, summaries, train_op], feed_dict={
-                x: batch[0],
-                y_true: batch[1],
-                sparsity_constraint: sc
-            })
-            sw.add_summary(summary, i + 1)
-
-            if (i + 1) % 100 == 0:
-                acc, acc_sum = sess.run([accuracy, acc_summary], feed_dict={
-                    x: mnist.test.images, 
-                    y_true: mnist.test.labels
-                })
-                sw.add_summary(acc_sum, i + 1)
-                print('batch: %d, loss: %f, accuracy: %f' % (i + 1, current_loss, acc))
-
-
-#compile network
-tf.reset_default_graph()
-os.system('tensorboard --logdir=' + tb_dir)
