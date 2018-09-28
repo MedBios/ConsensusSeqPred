@@ -21,6 +21,7 @@ from tflearn.layers.normalization import batch_normalization as bn
 from tflearn.layers.embedding_ops import embedding
 from tflearn.activations import relu
 import tensorflow as tf
+from tensorflow.contrib.tensorboard.plugins import projector
 
 
 def get_uniprot_data(kw, numxs=None):
@@ -182,9 +183,35 @@ def make_conf_mat(X, Y, model, string_length, num_classes):
 
     return cm
 
-def embDistance(filename, dims):
+
+def viz_embedding(tensor, string_length, emb_size):
+
+    tb_dir = os.getcwd()
+    sess2 = tf.Session()
+    sess2.run(tensor.initializer)
+    summary_writer = tf.summary.FileWriter(tb_dir)
+    config = projector.ProjectorConfig()
+    embedding = config.embeddings.add()
+    embedding.tensor_name = tensor.name
+    embedding.metadata_path = os.path.join(tb_dir, 'metadata.tsv')
+    projector.visualize_embeddings(summary_writer, config)
+    saver = tf.train.Saver([tensor])
+    name = str(string_length) + '_' + str(emb_size)
+    saver.save(sess2, os.path.join(tb_dir, name + tensor.name + '.ckpt'), 1)
+
+    with open(os.path.join(tb_dir, 'metadata.tsv'),'w') as f:
+        f.write("Index\tLabel\n")
+        for index in range(26):
+            f.write("%d\t%s\n" % (index,chr(index+97)))
+    f.close()
+
+
+def embDistance(filename, dims, string_length):
     reader = pywrap_tensorflow.NewCheckpointReader(filename)
     embeddingWeights = reader.get_tensor('Embedding/W')
+    emb_layer = tf.Variable(embeddingWeights, name='emb_' + str(dims) + '_' + str(string_length))
+    viz_embedding(emb_layer, string_length, dims)
+    
     wb = Workbook()
     emb1 = wb.add_sheet('embedding_distances')
     count = 0
