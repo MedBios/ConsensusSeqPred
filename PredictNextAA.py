@@ -79,8 +79,9 @@ name = 'string_length_' + str(str_len) + '_' + keyword + '_embedding_' + str(emb
 
 
 if __name__ == '__main__':
-    model = ProteinNet(str_len, emb, lr, num_classes)
+    model = ProteinNet(str_len, emb, lr, num_classes) # instantiate network
 
+    # if train argument is true, load data, make labels, process data, and train
     if Train in ['Y', 'y']:
         X = load_data(keyword, str_len, numProteins, view, lhist)
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
@@ -94,11 +95,12 @@ if __name__ == '__main__':
                   snapshot_step=100,
               run_id=name)
         model.save(name)
-    else:
+    else:  # if train is not true, load in a saved dataset and use it to do analysis
         _, _, testX, testY = h5load(str_len, name + '_data.h5')
 
         if emb > 1:
-            embDistance(name, emb)
+            print('Calculating Embedding Distances...')
+            embDistance(name, emb, str_len)
 
         model.load(name)
         tflearn.config.init_training_mode()
