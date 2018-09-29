@@ -22,6 +22,7 @@ from tflearn.layers.embedding_ops import embedding
 from tflearn.activations import relu
 import tensorflow as tf
 from tensorflow.contrib.tensorboard.plugins import projector
+from numpy.fft import fft, ifft
 
 
 def get_uniprot_data(kw, numxs=None):
@@ -76,6 +77,12 @@ def letter2num(seqs):
         seqList.append(seqNums)
 
     return seqList
+
+
+def whiten(string):
+    str_fft = fft(string)
+    spectrum = np.sqrt(np.mean(np.absolute(str_fft) ** 2))
+    return np.absolute(ifft(str_fft * (1. / spectrum)))
 
 
 def cutStrings(seqs, length):
@@ -134,7 +141,7 @@ def lenSort(seqs, ascending=True):
   return seqs
 
 
-def list2img(X):
+def list2img(X, white):
     X = lenSort(X, ascending=False)
     maxLength = len(X[0])
     strings = np.zeros([len(X), maxLength])
@@ -143,6 +150,10 @@ def list2img(X):
     for x in X:
         padlen = maxLength - len(x)
         paddedString = np.pad(np.asarray(x), (0, padlen), 'constant', constant_values=23.)
+
+        if white:
+            paddedString = whiten(paddedString)
+
         strings[count, :paddedString.size] = paddedString
         count += 1
 
@@ -182,7 +193,7 @@ def get_letters_around(data, letters):
     return
 
 
-def load_data(kw, str_len, numxs, view, letter_freq, letters_around):
+def load_data(kw, str_len, numxs, view, letter_freq, letters_around, white):
     X = get_uniprot_data(kw, numxs)
     if letter_freq:
         letter_frequency(X)
@@ -191,7 +202,7 @@ def load_data(kw, str_len, numxs, view, letter_freq, letters_around):
 
     X = letter2num(X)
     if view:
-        list2img(X)
+        list2img(X, white)
 
     X = cutStrings(X, str_len)
 

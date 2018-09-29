@@ -65,6 +65,11 @@ parser.add_argument(
     type=bool,
     default=False,
     help='Get the letters before and after every other letter.')
+parser.add_argument(
+    '--whiten',
+    type=bool,
+    default=False,
+    help='True to whiten strings or False (default) to not whiten.')
 
 args = parser.parse_args()
 str_len = args.string_length
@@ -80,6 +85,7 @@ numProteins = args.numProteins
 lhist = args.view_letter_histogram
 output_view = args.view_outputs
 letters_around = args.letters_around
+whiten = args.whiten
 name = 'string_length_' + str(str_len) + '_' + keyword + '_embedding_' + str(emb)
 
 
@@ -89,7 +95,8 @@ if __name__ == '__main__':
     # if train argument is true, load data, make labels, process data, and train
     if Train in ['Y', 'y']:
         # load and tidy the data
-        X = load_data(keyword, str_len, numProteins, view, lhist, letters_around)
+        X = load_data(keyword, str_len, numProteins, view, lhist, letters_around,
+                      whiten)
 
         # separate labels from data
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
