@@ -60,6 +60,11 @@ parser.add_argument(
     type=bool,
     default=False,
     help='Plot the outputs of the network as an image. Default False.')
+parser.add_argument(
+    '--letters_around',
+    type=bool,
+    default=False,
+    help='Get the letters before and after every other letter.')
 
 args = parser.parse_args()
 str_len = args.string_length
@@ -74,8 +79,8 @@ emb = args.embedding
 numProteins = args.numProteins
 lhist = args.view_letter_histogram
 output_view = args.view_outputs
+letters_around = args.letters_around
 name = 'string_length_' + str(str_len) + '_' + keyword + '_embedding_' + str(emb)
-
 
 
 if __name__ == '__main__':
@@ -83,18 +88,26 @@ if __name__ == '__main__':
 
     # if train argument is true, load data, make labels, process data, and train
     if Train in ['Y', 'y']:
-        X = load_data(keyword, str_len, numProteins, view, lhist)
-        sys.exit()
+        # load and tidy the data
+        X = load_data(keyword, str_len, numProteins, view, lhist, letters_around)
+
+        # separate labels from data
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
+
+        # Add extra dimensions for network
         X, testX = X[:, None, :, None], testX[:, None, :, None]
+
+        # save dataset with this string length
         h5save(X, Y, testX, testY, str_len, name + '_data.h5')
 
-        os.system('tensorboard --logdir=. &')
+        os.system('tensorboard --logdir=. &') # start tensorboard
+
+        # perform training
         model.fit(X, Y, validation_set=(testX, testY), n_epoch=num_epochs,
                   shuffle=True, batch_size=256, show_metric=True,
                   snapshot_step=100,
               run_id=name)
-        model.save(name)
+        model.save(name) # save trained model
     else:  # if train is not true, load in a saved dataset and use it to do analysis
         _, _, testX, testY = h5load(str_len, name + '_data.h5')
 
