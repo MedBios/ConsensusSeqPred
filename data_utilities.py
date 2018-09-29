@@ -182,12 +182,12 @@ def get_letters_around(data, letters):
     return
 
 
-def load_data(kw, str_len, numxs, view, letter_freq):
+def load_data(kw, str_len, numxs, view, letter_freq, letters_around):
     X = get_uniprot_data(kw, numxs)
     if letter_freq:
         letter_frequency(X)
-
-    get_letters_around(X, 'k')
+    if letters_around:
+        get_letters_around(X, 'k')
 
     X = letter2num(X)
     if view:
