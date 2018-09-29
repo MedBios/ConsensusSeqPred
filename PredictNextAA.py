@@ -84,8 +84,8 @@ if __name__ == '__main__':
     # if train argument is true, load data, make labels, process data, and train
     if Train in ['Y', 'y']:
         X = load_data(keyword, str_len, numProteins, view, lhist)
+        sys.exit()
         X, Y, testX, testY = make_labels(X, val_f, num_classes)
-        print(X.shape)
         X, testX = X[:, None, :, None], testX[:, None, :, None]
         h5save(X, Y, testX, testY, str_len, name + '_data.h5')
 
