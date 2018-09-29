@@ -150,10 +150,44 @@ def list2img(X):
     return
 
 
+def get_letters_around(data, letters):
+    labels = [chr(x+97) for x in list(range(26))]
+    wb = Workbook()
+    sheet1 = wb.add_sheet('Letters Before')
+    sheet2 = wb.add_sheet('Letters After')
+
+    for letters in labels:
+        before = [0] * 26
+        after = [0] * 26
+
+        for seq in data:
+            for idx, letter in enumerate(seq):
+                if letter == letters:
+                    if idx != 0:
+                        before[ord(seq[idx-1])-97] += 1
+                    if idx != len(seq)-1:
+                        after[ord(seq[idx+1])-97] += 1
+
+        [sheet1.write(ord(letters)-97, x, y) for x, y in enumerate(before)]
+        [sheet2.write(ord(letters)-97, x, y) for x, y in enumerate(after)]
+
+    wb.save('Letters_Around.xlsx')
+
+    #     sub1.hist(before, bins=26, align='left')
+    #     sub2.hist(after, bins=26, align='left')
+    #
+    # plt.tight_layout()
+    # plt.show()
+
+    return
+
+
 def load_data(kw, str_len, numxs, view, letter_freq):
     X = get_uniprot_data(kw, numxs)
     if letter_freq:
         letter_frequency(X)
+
+    get_letters_around(X, 'k')
 
     X = letter2num(X)
     if view:
@@ -211,7 +245,7 @@ def embDistance(filename, dims, string_length):
     embeddingWeights = reader.get_tensor('Embedding/W')
     emb_layer = tf.Variable(embeddingWeights, name='emb_' + str(dims) + '_' + str(string_length))
     viz_embedding(emb_layer, string_length, dims)
-    
+
     wb = Workbook()
     emb1 = wb.add_sheet('embedding_distances')
     count = 0
