@@ -146,14 +146,16 @@ def list2img(X, white):
     maxLength = len(X[0])
     strings = np.zeros([len(X), maxLength])
     count = 0
+    pad_vals = 23.
 
     for x in X:
         padlen = maxLength - len(x)
-        paddedString = np.pad(np.asarray(x), (0, padlen), 'constant', constant_values=23.)
-
+        x = np.asarray(x)
         if white:
-            paddedString = whiten(paddedString)
+            x = whiten(x)
+            pad_vals = 0.
 
+        paddedString = np.pad(x, (0, padlen), 'constant', constant_values=pad_vals)
         strings[count, :paddedString.size] = paddedString
         count += 1
 
