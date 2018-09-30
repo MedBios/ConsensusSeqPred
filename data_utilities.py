@@ -80,9 +80,9 @@ def letter2num(seqs):
 
 
 def whiten(string):
-    str_fft = fft(string)
+    str_fft = fft(string, axis=1)
     spectrum = np.sqrt(np.mean(np.absolute(str_fft) ** 2))
-    return np.absolute(ifft(str_fft * (1. / spectrum)))
+    return np.absolute(ifft(str_fft * (1. / spectrum), axis=1))
 
 
 def cutStrings(seqs, length):
@@ -146,18 +146,18 @@ def list2img(X, white):
     maxLength = len(X[0])
     strings = np.zeros([len(X), maxLength])
     count = 0
-    pad_vals = 23.
 
     for x in X:
         padlen = maxLength - len(x)
         x = np.asarray(x)
-        if white:
-            x = whiten(x)
-            pad_vals = 0.
 
-        paddedString = np.pad(x, (0, padlen), 'constant', constant_values=pad_vals)
+        paddedString = np.pad(x, (0, padlen), 'constant', constant_values=23.)
         strings[count, :paddedString.size] = paddedString
         count += 1
+
+    if white:
+        strings -= np.mean(strings, 0)
+        strings = whiten(strings)
 
     imshow(strings)
     return
@@ -325,10 +325,6 @@ def output_list2img(X, model, string_length):
     #     y_hat = np.argmax(model.predict(x[None, None, :, None])[0, :])
     #     sublist.append(y_hat)
     #     count += 1
-
-    list2img(masterlist)
-    return
-
 
 
 def cm2excel(cm, string_length, name):
